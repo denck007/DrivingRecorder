@@ -202,7 +202,8 @@ class SerialCANBus(object):
             for packet in self.parsedCANData:
                 f.write("{},{},".format(packet["time"],packet["canId"]))
                 for b in packet["data"]:
-                    f.write("{},".format(b))
+                    d = "{}".format(b)[2:]
+                    f.write("0x{}".format(d.zfill(2)))# make every one the same size
                 f.write("\n")
         self.parsedCANData = []
 
