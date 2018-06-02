@@ -29,14 +29,6 @@ carData = SerialCANBus(CANDataFile,CANData=CANData)
 imageRecorder = RecordWebCam(outputPath,captureFrequency=captureFrequency,camId=camId)
 
 lastPrint = 0
-# debugging
-data_echo = b'\xf1' # start of data
-data_echo += b'\x0b' # indicate echo can packet
-data_echo += b'\xa0\xb0\xc0\xd0' #frame id
-data_echo += b'\x00' # which bus
-data_echo += b'\x08' # frame length
-data_echo += b'\x10\x11\x12\x13\x14\x15\x16\x1a'
-
 try:
     while True:
         currentTime = time.time()
