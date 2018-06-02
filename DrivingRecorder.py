@@ -11,22 +11,24 @@ It will:
 '''
 
 from SerialCANBus import SerialCANBus
-#from RecordWebcam import RecordWebCam
+from RecordWebcam import RecordWebCam
 import time
 import sys
 
 # Settings:
-outputPath = "testRecord/"
+printEvery = 0.5 # seconds
+outputPath = "testRecord/"#
 CANDataFile = outputPath + "test.csv"
 captureFrequency = 5.0 # Hz
-camId = 0
-CANData = [{"id":b'\x00\x00\x07\x30','data':b'\x03\x22\xd9\x00\x00\x00\x00\x00'}]
-
+camId = 1
+#CANData = [{"id":b'\x00\x00\x07\x30','data':b'\x03\x22\xd9\x00\x00\x00\x00\x00'}]
+CANData= []
 
 # initalize objects:
 carData = SerialCANBus(CANDataFile,CANData=CANData)
-#imageRecorder = RecordWebCam(outputPath,captureFrequency=captureFrequency,camId=camId)
+imageRecorder = RecordWebCam(outputPath,captureFrequency=captureFrequency,camId=camId)
 
+lastPrint = 0
 # debugging
 data_echo = b'\xf1' # start of data
 data_echo += b'\x0b' # indicate echo can packet
@@ -37,11 +39,15 @@ data_echo += b'\x10\x11\x12\x13\x14\x15\x16\x1a'
 
 try:
     while True:
+        currentTime = time.time()
+        if currentTime - printEvery > lastPrint:
+            lastPrint = currentTime
+            print("\rRecording data at {:.3f}".format(currentTime),end="")
         carData()
-        #imageRecorder()
+        imageRecorder()
 except(KeyboardInterrupt,SystemExit):
     print("\nShutting down by user request...")
-    #imageRecorder.cap.release()
+    imageRecorder.cap.release()
     print("Exiting!")
     
     

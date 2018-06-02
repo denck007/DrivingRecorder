@@ -14,7 +14,7 @@ class SerialCANBus(object):
         modifies it by an offset to match the computers time.
 
     To get the M2 to send CAN data back in binary send it b'\xe7'
-        If you do not send this it will send can data in ascii and some other data in binary such as time
+        This is required as the CAN data must be sent back as binary inorder to send out requests
 
     Get the time on M2:
         Send: b'\xf1\x01'
@@ -76,7 +76,7 @@ class SerialCANBus(object):
         if not os.path.isdir(fileDir):
             os.makedirs(fileDir)
 
-        print("__init__() done")
+        print("Finished setting up CAN Recorder!")
 
     def _initializeM2(self):
         '''
@@ -88,13 +88,11 @@ class SerialCANBus(object):
 
         print("Starting serial communication with M2...")
         self.serial = serial.Serial(self.serialBusName,1152000,timeout=0)
-        #self.serial.write(b'\xe7') # tell M2RET to respond in binary, not using this because it is easier to just read ascii
+        self.serial.write(b'\xe7') # tell M2RET to respond in binary
         time.sleep(2) # Let the M2 boot and dump all its boot info to serial
         self.serial.read_all() # then read it all to clear it
 
         self._updateTimeOffset()
-
-        print("Finished initialization!")
 
     def _findBus(self):
         '''
@@ -103,6 +101,7 @@ class SerialCANBus(object):
         allBusNames = os.listdir("/dev/")
         matchingBuses = [x for x in allBusNames if "ttyACM" in x]
         
+        busName = ""
         if len(matchingBuses) > 0:
             print("Found prospective buses: {}".format(matchingBuses))
             busName = "/dev/" + matchingBuses[0]
@@ -114,9 +113,6 @@ class SerialCANBus(object):
         Compare it to the local machine time
         Set self.timeOffset
         '''
-        print("Updating time offset...")
-        print("is open: {}".format(self.serial.is_open))
-        
         # read the bus till we get a result
         startTime = time.time()
         t = None
@@ -130,7 +126,7 @@ class SerialCANBus(object):
                     t = struct.unpack('I',rawData[idx+2:idx+6])[0]/1e6
                     break
         self.timeOffset = time.time()-t
-        print("time offset: {}".format(self.timeOffset))
+        print("Updated time offset: {}".format(self.timeOffset))
 
     def _convertCANDataToCANRequestPackets(self):
         '''
@@ -163,38 +159,35 @@ class SerialCANBus(object):
         # do rate limiting
         currentTime = time.time()
         if currentTime - self.rateLimit > self.lastDataSend:
-            print("Sending CAN Packets")
             self.lastDataSend = currentTime
             for packet in self.CANRequestPackets:
                 self.serial.write(packet)
 
-        # read in the packets. We are using the ASCII mode with the M2 (never send b'\xe7')
-        # We need to check that the first character is not the symbol for the start of a binary packet (b'\xf1')
-        # If it is not a binary packet, add to save list, otherwise ignore it
-        dataPackets = self.serial.readlines()
-        for packet in dataPackets:
-            if packet[0] != 241:
-                self.parseCANPacket(packet)
+        # read in the packets
+        self.data += self.serial.read_all()
+        idx = 0
+        dataLength = len(self.data)
+        while idx < dataLength:
+            # 241==0xf1 start of packet and 0==0x00 can packet
+            #if hex(self.data[idx]) == '0xf1' and hex(self.data[idx+1]) == '0x00':
+            if self.data[idx] == 241 and self.data[idx+1] == 0:
+                if idx+11>dataLength: # the can frame length is not included, so escape
+                    break
+                t = struct.unpack('I',self.data[idx+2:idx+6])[0]/1e6 + self.timeOffset
+                canId = hex(struct.unpack('I',self.data[idx+6:idx+10])[0])
+                d = []
+                messageLength = self.data[idx+10]
+                if idx+11+messageLength > dataLength:#the data is not included so skip for now
+                    break
+                for ii in range(11,11+messageLength-1):
+                    d.append(hex(self.data[idx+ii]))
+                self.parsedCANData.append({'time':t,'canId':canId,'data':d})
+                idx += 11 + messageLength +1
+            else:
+                idx += 1
+        self.data = self.data[idx:]
 
         self.saveParsedData()
-
-    def parseCANPacket(self,packet):
-        '''
-        Add the packet to the list of dicts to write
-        '''
-        p= packet.decode("utf-8")[:-2]
-        p = p.split(" ")
-        t = str(float(p[0])/1e6 + self.timeOffset)
-        CANid = p[2]
-        mode = p[3]
-        bus = p[4]
-        #length = p[5]
-        data = p[6:]
-
-        parsed = "{},{},{},{}".format(t,CANid,mode,bus)
-        for d in data:
-            parsed += ",{}".format(d)
-        self.parsedCANData.append(parsed)
 
     def saveParsedData(self):
         '''
@@ -204,10 +197,12 @@ class SerialCANBus(object):
 
         save the parsed data
         '''
+
         with open(self.outputFile,'a') as f:
-            for l in self.parsedCANData:
-                f.write(l)
+            for packet in self.parsedCANData:
+                f.write("{},{},".format(packet["time"],packet["canId"]))
+                for b in packet["data"]:
+                    f.write("{},".format(b))
                 f.write("\n")
         self.parsedCANData = []
-
 
