@@ -1,0 +1,51 @@
+
+'''
+This is meant to generate data for ML training
+It will:
+ * Send out requests for data from the car over CAN bus (using an M2 connected via serial)
+ * Recieve the data back from the CAN bus
+ * Filter out unwanted data
+ * Save data by the epoch at which it happened, down to the mili-second
+ * * The macchina M2 sends time back in micro-seconds
+ * Capture a frame from a camera at 5 Hz
+'''
+
+from SerialCANBus import SerialCANBus
+#from RecordWebcam import RecordWebCam
+import time
+import sys
+
+# Settings:
+outputPath = "testRecord/"
+CANDataFile = outputPath + "test.csv"
+captureFrequency = 5.0 # Hz
+camId = 0
+CANData = [{"id":b'\x00\x00\x07\x30','data':b'\x03\x22\xd9\x00\x00\x00\x00\x00'}]
+
+
+# initalize objects:
+carData = SerialCANBus(CANDataFile,CANData=CANData)
+#imageRecorder = RecordWebCam(outputPath,captureFrequency=captureFrequency,camId=camId)
+
+# debugging
+data_echo = b'\xf1' # start of data
+data_echo += b'\x0b' # indicate echo can packet
+data_echo += b'\xa0\xb0\xc0\xd0' #frame id
+data_echo += b'\x00' # which bus
+data_echo += b'\x08' # frame length
+data_echo += b'\x10\x11\x12\x13\x14\x15\x16\x1a'
+
+try:
+    while True:
+        carData()
+        #imageRecorder()
+except(KeyboardInterrupt,SystemExit):
+    print("\nShutting down by user request...")
+    #imageRecorder.cap.release()
+    print("Exiting!")
+    
+    
+
+
+
+
