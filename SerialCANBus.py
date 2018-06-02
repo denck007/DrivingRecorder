@@ -47,15 +47,11 @@ class SerialCANBus(object):
         '''
             outputFile: the csv file to save data to.
             CANData: list of dicts that define all the packets we are sending
-                        [{"id":b'<4 byte CAN id as bytes>',"data":<bytes to request>}]
+                        [{"id":b'<4 byte CAN id as bytes>',"responseId":<b'<4 byte CAN id as bytes>',"data":<bytes to request>}]
             serialBus: The bus that the M2 is attached to. If nothing is provided it will attempt to connect to the first bus
                         listed in /dev/ttyACM*
             
-        '''
-        # when CAN data is requested, the data is typically returned with and id of 8 bytes higher
-        # this is the case for most cars, but not all
-        self.returnDataOffset = 8 
-        
+        '''        
         # inorder to not completely spam the CAN bus, we want to rate limit the requests for data
         # this is the time in seconds that must pass between each data send
         self.rateLimit = 0.1
@@ -69,6 +65,7 @@ class SerialCANBus(object):
         self.parsedCANData = []
 
         self._convertCANDataToCANRequestPackets()
+        self._convertCANDataToResponseFilters()
         self._initializeM2() # create self.serial, set timeOffset
 
         # make sure the output directory exists
@@ -151,6 +148,21 @@ class SerialCANBus(object):
             print("created packet: ",end="")
             print(packet)
 
+    def _convertCANDataToResponseFilters(self):
+        '''
+        We do not want to save all of the data on the bus, only the responses to what we have asked for.
+        Responses come in with ID of sendId + returnDataOffset
+        Make a list of strings that match the responses so they can be quickly filtered later
+        '''
+        self.CANResponseFilters = []
+        for frame in self.CANData:
+            responseId = frame["responseId"]
+            data = "0x"
+            for byte in responseId:
+                d = "{:02x}".format(byte)
+                data += ("{}".format(d.zfill(2)))
+            self.CANResponseFilters.append(data)
+
     def __call__(self):
         '''
         Send out requests for data
@@ -174,7 +186,9 @@ class SerialCANBus(object):
                 if idx+11>dataLength: # the can frame length is not included, so escape
                     break
                 t = struct.unpack('I',self.data[idx+2:idx+6])[0]/1e6 + self.timeOffset
-                canId = hex(struct.unpack('I',self.data[idx+6:idx+10])[0])
+                canId = self.data[idx+6:idx+10]
+                print(canId)
+                #canId = hex(struct.unpack('I',self.data[idx+6:idx+10])[0])
                 d = []
                 messageLength = self.data[idx+10]
                 if idx+11+messageLength > dataLength:#the data is not included so skip for now
@@ -200,7 +214,15 @@ class SerialCANBus(object):
 
         with open(self.outputFile,'a') as f:
             for packet in self.parsedCANData:
-                f.write("{},{},".format(packet["time"],packet["canId"]))
+                CANId = packet["canId"]
+                cleanId = "0x"
+                for byte in CANId:
+                    d = "{:02x}".format(byte)
+                    cleanId += ("{}".format(d.zfill(2)))
+                #if cleanId not in self.CANResponseFilters:# if it is not a response we want, skip saving it
+                #    continue
+
+                f.write("{},{},".format(packet["time"],cleanId))
                 for b in packet["data"]:
                     d = "{}".format(b)[2:]
                     f.write("0x{}".format(d.zfill(2)))# make every one the same size
