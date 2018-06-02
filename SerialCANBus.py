@@ -187,7 +187,6 @@ class SerialCANBus(object):
                     break
                 t = struct.unpack('I',self.data[idx+2:idx+6])[0]/1e6 + self.timeOffset
                 canId = self.data[idx+6:idx+10]
-                print(canId)
                 #canId = hex(struct.unpack('I',self.data[idx+6:idx+10])[0])
                 d = []
                 messageLength = self.data[idx+10]
@@ -219,13 +218,14 @@ class SerialCANBus(object):
                 for byte in CANId:
                     d = "{:02x}".format(byte)
                     cleanId += ("{}".format(d.zfill(2)))
-                #if cleanId not in self.CANResponseFilters:# if it is not a response we want, skip saving it
-                #    continue
+                if cleanId not in self.CANResponseFilters:# if it is not a response we want, skip saving it
+                    #f.write("bad packet\n")
+                    continue
 
                 f.write("{},{},".format(packet["time"],cleanId))
                 for b in packet["data"]:
                     d = "{}".format(b)[2:]
-                    f.write("0x{}".format(d.zfill(2)))# make every one the same size
+                    f.write("0x{},".format(d.zfill(2)))# make every one the same size
                 f.write("\n")
         self.parsedCANData = []
 
