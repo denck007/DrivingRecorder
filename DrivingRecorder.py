@@ -20,20 +20,21 @@ printEvery = 0.5 # seconds
 outputPath = "testRecord/"#
 CANDataFile = outputPath + "test.csv"
 dataRequestMaxFrequency = 0.1 # seconds
-writeFrequency = 100 #number of packets to build up before saving to disk
+writeFrequency = 1 #number of packets to build up before saving to disk
 captureFrequency = 5.0 # Hz
 camId = 1
 showImages = True
-CANData = [{"id":b'\x00\x00\x07\x30','data':b'\x03\x22\xd9\x00\x00\x00\x00\x00'}]
+CANData = [{"id":b'\x30\x07\x00\x00',"responseId":b'\x38\x07\x00\x00','data':b'\x03\x22\x33\x02\x00\x00\x00\x00'}]
 #CANData= []
 
 # initalize objects:
-carData = SerialCANBus(CANDataFile,CANData=CANData,dataRequestMaxFrequency=dataRequestMaxFrequency,writeFrequency=writeFrequency)
+carData = SerialCANBus(CANDataFile,CANData=CANData,dataRequestMaxFrequency=dataRequestMaxFrequency,writeFrequency=writeFrequency,hexExplicit=False)
 imageRecorder = RecordWebCam(outputPath,captureFrequency=captureFrequency,camId=camId,show=showImages)
 
 lastPrint = 0
 try:
     while True:
+        time.sleep(.01)
         currentTime = time.time()
         if currentTime - printEvery > lastPrint:
             lastPrint = currentTime
