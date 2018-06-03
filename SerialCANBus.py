@@ -183,46 +183,60 @@ class SerialCANBus(object):
             # 241==0xf1 start of packet and 0==0x00 can packet
             #if hex(self.data[idx]) == '0xf1' and hex(self.data[idx+1]) == '0x00':
             if self.data[idx] == 241 and self.data[idx+1] == 0:
-                if idx+11>dataLength: # the can frame length is not included, so escape
-                    break
-                t = struct.unpack('I',self.data[idx+2:idx+6])[0]/1e6 + self.timeOffset
-                canId = self.data[idx+6:idx+10]
-                #canId = hex(struct.unpack('I',self.data[idx+6:idx+10])[0])
-                d = []
-                messageLength = self.data[idx+10]
-                if idx+11+messageLength > dataLength:#the data is not included so skip for now
-                    break
-                for ii in range(11,11+messageLength-1):
-                    d.append(hex(self.data[idx+ii]))
-                self.parsedCANData.append({'time':t,'canId':canId,'data':d})
-                idx += 11 + messageLength +1
+                idx = self._parseCANPacket(idx)
             else:
                 idx += 1
         self.data = self.data[idx:]
 
         self.saveParsedData()
+    def _parseCANPacket(self,idx):
+        '''
+        parse the CAN packet that starts at idx
+        '''
+        if idx+11>len(self.data): # the can frame length is not included, so escape
+            return idx
+
+        t = struct.unpack('I',self.data[idx+2:idx+6])[0]/1e6 + self.timeOffset
+        # parse out the CAN Id
+        CANId = "0x"
+        for byte in self.data[idx+6:idx+10]:
+            d = "{:02x}".format(byte)
+            CANId += ("{}".format(d.zfill(2)))
+
+        # get the data from the CAN frame. 
+        d = []
+        messageLength = self.data[idx+10]
+        endOfMessageIdx = idx + 11 + messageLength
+        #If the frame is not one we asked for then skip the entire thing
+        if CANId not in self.CANResponseFilters:
+            return endOfMessageIdx
+        #the data is not included so skip for now
+        elif endOfMessageIdx > len(self.data):
+            return endOfMessageIdx
+
+        for ii in range(11,11+messageLength-1):
+            d.append(hex(self.data[idx+ii]))
+        self.parsedCANData.append({'time':t,'canId':CANId,'data':d})
+        return endOfMessageIdx
 
     def saveParsedData(self):
         '''
-        self.newOutputFileFrequency = newOutFileFrequency
-        self.fileStartedAt = 0 # the time at which the current file was created, set in saveParsedData
-        self.fileCount = -1 # t
-
         save the parsed data
+        If the data is there, it then we asked for the data and we should save it
         '''
 
         with open(self.outputFile,'a') as f:
             for packet in self.parsedCANData:
                 CANId = packet["canId"]
-                cleanId = "0x"
-                for byte in CANId:
-                    d = "{:02x}".format(byte)
-                    cleanId += ("{}".format(d.zfill(2)))
-                if cleanId not in self.CANResponseFilters:# if it is not a response we want, skip saving it
-                    #f.write("bad packet\n")
-                    continue
+                #cleanId = "0x"
+                #for byte in CANId:
+                #    d = "{:02x}".format(byte)
+                #    cleanId += ("{}".format(d.zfill(2)))
+                #if cleanId not in self.CANResponseFilters:# if it is not a response we want, skip saving it
+                #    #f.write("bad packet\n")
+                #    continue
 
-                f.write("{},{},".format(packet["time"],cleanId))
+                f.write("{},{},".format(packet["time"],CANId))
                 for b in packet["data"]:
                     d = "{}".format(b)[2:]
                     f.write("0x{},".format(d.zfill(2)))# make every one the same size
