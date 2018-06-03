@@ -23,12 +23,13 @@ dataRequestMaxFrequency = 0.1 # seconds
 writeFrequency = 100 #number of packets to build up before saving to disk
 captureFrequency = 5.0 # Hz
 camId = 1
-#CANData = [{"id":b'\x00\x00\x07\x30','data':b'\x03\x22\xd9\x00\x00\x00\x00\x00'}]
-CANData= []
+showImages = True
+CANData = [{"id":b'\x00\x00\x07\x30','data':b'\x03\x22\xd9\x00\x00\x00\x00\x00'}]
+#CANData= []
 
 # initalize objects:
 carData = SerialCANBus(CANDataFile,CANData=CANData,dataRequestMaxFrequency=dataRequestMaxFrequency,writeFrequency=writeFrequency)
-imageRecorder = RecordWebCam(outputPath,captureFrequency=captureFrequency,camId=camId)
+imageRecorder = RecordWebCam(outputPath,captureFrequency=captureFrequency,camId=camId,show=showImages)
 
 lastPrint = 0
 try:
