@@ -43,7 +43,7 @@ class SerialCANBus(object):
         |     19       |     NA      |   0x00  |  can be a check sum, but for M2ret it is just 0
     '''
 
-    def __init__(self,outputFile,CANData=[],serialBusName="",dataRequestMaxFrequency=0.1,writeFrequency=100):
+    def __init__(self,outputFile,CANData=[],serialBusName="",dataRequestMaxFrequency=0.1,writeFrequency=100,hexExplicit=False):
         '''
             outputFile: the csv file to save data to.
             CANData: list of dicts that define all the packets we are sending
@@ -53,6 +53,7 @@ class SerialCANBus(object):
             dataRequestMaxFrequency: the minimum time between requests for data are sent out in seconds
                         Note that this is a MINIMUM value and it is likely to take longer
             writeFrequency: The number of responses to be built up before the data is saved to disk, integer
+            hexExplicit: should the leading '0x' be included in every saved byte
         '''        
         # inorder to not completely spam the CAN bus, we want to rate limit the requests for data
         # this is the time in seconds that must pass between each data send
@@ -60,6 +61,8 @@ class SerialCANBus(object):
 
         # How many responses must be accumulated before the data is saved
         self.writeFrequency = writeFrequency
+
+        self.hexExplicit = hexExplicit
 
         self.lastDataSend = 0 # record the last time.time() we requested data
 
@@ -162,12 +165,25 @@ class SerialCANBus(object):
         '''
         self.CANResponseFilters = []
         for frame in self.CANData:
-            responseId = frame["responseId"]
-            data = "0x"
-            for byte in responseId:
+            self.CANResponseFilters.append(self._parseCANId(frame["responseId"]))
+
+    def _parseCANId(self,canIdRaw):
+        '''
+        return the string version of the CANid
+        This is used in multiple spots, so use the same version everywhere
+        '''
+        if self.hexExplicit:
+            CANId = "0x"
+            for byte in canIdRaw:
                 d = "{:02x}".format(byte)
-                data += ("{}".format(d.zfill(2)))
-            self.CANResponseFilters.append(data)
+                CANId += ("{}".format(d.zfill(2)))
+        else:
+            CANId = ""
+            for byte in canIdRaw:
+                d = "{:02x}".format(byte)
+                CANId += ("{}".format(d))
+            CANId = CANId.lstrip("0")
+        return CANId
 
     def __call__(self):
         '''
@@ -194,7 +210,7 @@ class SerialCANBus(object):
         self.data = self.data[idx:]
 
         # cut down write frequency
-        if len(self.parsedCANData) > 100:
+        if len(self.parsedCANData) > self.writeFrequency:
             self.saveParsedData()
 
     def _parseCANPacket(self,idx):
@@ -206,10 +222,7 @@ class SerialCANBus(object):
 
         t = struct.unpack('I',self.data[idx+2:idx+6])[0]/1e6 + self.timeOffset
         # parse out the CAN Id
-        CANId = "0x"
-        for byte in self.data[idx+6:idx+10]:
-            d = "{:02x}".format(byte)
-            CANId += ("{}".format(d.zfill(2)))
+        CANId = self._parseCANId(self.data[idx+6:idx+10])
 
         # get the data from the CAN frame. 
         d = []
@@ -234,10 +247,13 @@ class SerialCANBus(object):
         '''
         with open(self.outputFile,'a') as f:
             for packet in self.parsedCANData:
-                f.write("{},{},".format(packet["time"],packet["canId"]))
+                f.write("{:.3f},{},".format(packet["time"],packet["canId"]))
                 for b in packet["data"]:
                     d = "{}".format(b)[2:]
-                    f.write("0x{},".format(d.zfill(2)))# make every one the same size
+                    if self.hexExplicit:
+                        f.write("0x{},".format(d.zfill(2)))
+                    else:
+                        f.write("{},".format(d))
                 f.write("\n")
         self.parsedCANData = []
 
