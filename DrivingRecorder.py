@@ -19,13 +19,15 @@ import sys
 printEvery = 0.5 # seconds
 outputPath = "testRecord/"#
 CANDataFile = outputPath + "test.csv"
+dataRequestMaxFrequency = 0.1 # seconds
+writeFrequency = 100 #number of packets to build up before saving to disk
 captureFrequency = 5.0 # Hz
 camId = 1
 #CANData = [{"id":b'\x00\x00\x07\x30','data':b'\x03\x22\xd9\x00\x00\x00\x00\x00'}]
 CANData= []
 
 # initalize objects:
-carData = SerialCANBus(CANDataFile,CANData=CANData)
+carData = SerialCANBus(CANDataFile,CANData=CANData,dataRequestMaxFrequency=dataRequestMaxFrequency,writeFrequency=writeFrequency)
 imageRecorder = RecordWebCam(outputPath,captureFrequency=captureFrequency,camId=camId)
 
 lastPrint = 0
@@ -39,6 +41,7 @@ try:
         imageRecorder()
 except(KeyboardInterrupt,SystemExit):
     print("\nShutting down by user request...")
+    carData.saveParsedData()
     imageRecorder.cap.release()
     print("Exiting!")
     

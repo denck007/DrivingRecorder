@@ -43,18 +43,24 @@ class SerialCANBus(object):
         |     19       |     NA      |   0x00  |  can be a check sum, but for M2ret it is just 0
     '''
 
-    def __init__(self,outputFile,CANData=[],serialBusName=""):
+    def __init__(self,outputFile,CANData=[],serialBusName="",dataRequestMaxFrequency=0.1,writeFrequency=100):
         '''
             outputFile: the csv file to save data to.
             CANData: list of dicts that define all the packets we are sending
                         [{"id":b'<4 byte CAN id as bytes>',"responseId":<b'<4 byte CAN id as bytes>',"data":<bytes to request>}]
             serialBus: The bus that the M2 is attached to. If nothing is provided it will attempt to connect to the first bus
                         listed in /dev/ttyACM*
-            
+            dataRequestMaxFrequency: the minimum time between requests for data are sent out in seconds
+                        Note that this is a MINIMUM value and it is likely to take longer
+            writeFrequency: The number of responses to be built up before the data is saved to disk, integer
         '''        
         # inorder to not completely spam the CAN bus, we want to rate limit the requests for data
         # this is the time in seconds that must pass between each data send
-        self.rateLimit = 0.1
+        self.rateLimit = dataRequestMaxFrequency
+
+        # How many responses must be accumulated before the data is saved
+        self.writeFrequency = writeFrequency
+
         self.lastDataSend = 0 # record the last time.time() we requested data
 
         self.outputFile = outputFile
@@ -181,14 +187,16 @@ class SerialCANBus(object):
         dataLength = len(self.data)
         while idx < dataLength:
             # 241==0xf1 start of packet and 0==0x00 can packet
-            #if hex(self.data[idx]) == '0xf1' and hex(self.data[idx+1]) == '0x00':
             if self.data[idx] == 241 and self.data[idx+1] == 0:
                 idx = self._parseCANPacket(idx)
             else:
                 idx += 1
         self.data = self.data[idx:]
 
-        self.saveParsedData()
+        # cut down write frequency
+        if len(self.parsedCANData) > 100:
+            self.saveParsedData()
+
     def _parseCANPacket(self,idx):
         '''
         parse the CAN packet that starts at idx
@@ -224,19 +232,9 @@ class SerialCANBus(object):
         save the parsed data
         If the data is there, it then we asked for the data and we should save it
         '''
-
         with open(self.outputFile,'a') as f:
             for packet in self.parsedCANData:
-                CANId = packet["canId"]
-                #cleanId = "0x"
-                #for byte in CANId:
-                #    d = "{:02x}".format(byte)
-                #    cleanId += ("{}".format(d.zfill(2)))
-                #if cleanId not in self.CANResponseFilters:# if it is not a response we want, skip saving it
-                #    #f.write("bad packet\n")
-                #    continue
-
-                f.write("{},{},".format(packet["time"],CANId))
+                f.write("{},{},".format(packet["time"],packet["canId"]))
                 for b in packet["data"]:
                     d = "{}".format(b)[2:]
                     f.write("0x{},".format(d.zfill(2)))# make every one the same size
