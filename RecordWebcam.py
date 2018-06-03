@@ -57,7 +57,7 @@ class RecordWebCam(object):
             frame = cv2.flip(frame,-1)
             cv2.imwrite("{}{:0f}.jpeg".format(self.outPath,currentTime*1000),frame)
             if self.show:
-                cv2.waitKey(0)
+                cv2.waitKey(1)
                 cv2.imshow(self.windowName,frame)
 
     def shutDown(self):

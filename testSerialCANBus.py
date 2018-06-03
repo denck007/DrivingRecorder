@@ -59,3 +59,4 @@ while startTime + 3 > time.time():
     print(time.time())
     time.sleep(1)
     carData()
+carData.saveParsedData()
