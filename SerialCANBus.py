@@ -151,6 +151,7 @@ class SerialCANBus(object):
         for frame in self.CANData:
             packet = b'\xf1\x00'
             packet += frame["id"]
+            packet += b'\x00' # bus
             packet += bytes([len(frame["data"])])
             packet += frame["data"]
             self.CANRequestPackets.append(packet)
@@ -172,17 +173,16 @@ class SerialCANBus(object):
         return the string version of the CANid
         This is used in multiple spots, so use the same version everywhere
         '''
+        CANId = ""
         if self.hexExplicit:
-            CANId = "0x"
             for byte in canIdRaw:
                 d = "{:02x}".format(byte)
-                CANId += ("{}".format(d.zfill(2)))
+                CANId = ("{}{}".format(d.zfill(2),CANId))
+            CANId = "0x"+CANId
         else:
-            CANId = ""
             for byte in canIdRaw:
                 d = "{:02x}".format(byte)
-                CANId += ("{}".format(d))
-            CANId = CANId.lstrip("0")
+                CANId = ("{}{}".format(d,CANId))
         return CANId
 
     def __call__(self):
@@ -193,15 +193,17 @@ class SerialCANBus(object):
         # do rate limiting
         currentTime = time.time()
         if currentTime - self.rateLimit > self.lastDataSend:
+            #print("sending data")
             self.lastDataSend = currentTime
             for packet in self.CANRequestPackets:
                 self.serial.write(packet)
 
         # read in the packets
         self.data += self.serial.read_all()
+        #print("len(self.data): {}".format(len(self.data)))        
         idx = 0
         dataLength = len(self.data)
-        while idx < dataLength:
+        while idx < dataLength-20: # make sure there is enough left on the stack to read the whole thing
             # 241==0xf1 start of packet and 0==0x00 can packet
             if self.data[idx] == 241 and self.data[idx+1] == 0:
                 idx = self._parseCANPacket(idx)
@@ -223,7 +225,6 @@ class SerialCANBus(object):
         t = struct.unpack('I',self.data[idx+2:idx+6])[0]/1e6 + self.timeOffset
         # parse out the CAN Id
         CANId = self._parseCANId(self.data[idx+6:idx+10])
-
         # get the data from the CAN frame. 
         d = []
         messageLength = self.data[idx+10]
@@ -235,7 +236,7 @@ class SerialCANBus(object):
         elif endOfMessageIdx > len(self.data):
             return endOfMessageIdx
 
-        for ii in range(11,11+messageLength-1):
+        for ii in range(11,11+messageLength):
             d.append(hex(self.data[idx+ii]))
         self.parsedCANData.append({'time':t,'canId':CANId,'data':d})
         return endOfMessageIdx
@@ -247,7 +248,11 @@ class SerialCANBus(object):
         '''
         with open(self.outputFile,'a') as f:
             for packet in self.parsedCANData:
-                f.write("{:.3f},{},".format(packet["time"],packet["canId"]))
+                CANId = ""
+                for idx in range(len(packet["canId"])-1,-1,-2):
+                    CANId = "{}{}{}".format(packet["canId"][idx-1],packet["canId"][idx],CANId)
+
+                f.write("{:.3f},{},".format(packet["time"],CANId))
                 for b in packet["data"]:
                     d = "{}".format(b)[2:]
                     if self.hexExplicit:
