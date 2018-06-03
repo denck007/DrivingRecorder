@@ -43,7 +43,8 @@ try:
 except(KeyboardInterrupt,SystemExit):
     print("\nShutting down by user request...")
     carData.saveParsedData()
-    imageRecorder.cap.release()
+    imageRecorder.shutDown()
+    
     print("Exiting!")
     
     
