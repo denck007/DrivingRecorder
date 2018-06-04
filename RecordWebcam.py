@@ -25,6 +25,8 @@ class RecordWebCam(object):
         # create the video stream
         self.camId = camId
         self.cap = cv2.VideoCapture(camId)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT,720)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,1280)
 
         if show:
             self.windowName = "Captured Image"

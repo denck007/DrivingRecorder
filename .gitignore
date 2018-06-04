@@ -1,3 +1,6 @@
+*.jpeg
+*.csv
+
 _*.py # experimental files that do not need to be tracked
 
 # Byte-compiled / optimized / DLL files

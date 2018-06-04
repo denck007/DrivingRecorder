@@ -198,22 +198,22 @@ class SerialCANBus(object):
             for packet in self.CANRequestPackets:
                 self.serial.write(packet)
 
-        # read in the packets
-        self.data += self.serial.read_all()
-        #print("len(self.data): {}".format(len(self.data)))        
-        idx = 0
-        dataLength = len(self.data)
-        while idx < dataLength-20: # make sure there is enough left on the stack to read the whole thing
-            # 241==0xf1 start of packet and 0==0x00 can packet
-            if self.data[idx] == 241 and self.data[idx+1] == 0:
-                idx = self._parseCANPacket(idx)
-            else:
-                idx += 1
-        self.data = self.data[idx:]
+            # read in the packets
+            self.data += self.serial.read_all()
+            #print("len(self.data): {}".format(len(self.data)))        
+            idx = 0
+            dataLength = len(self.data)
+            while idx < dataLength-20: # make sure there is enough left on the stack to read the whole thing
+                # 241==0xf1 start of packet and 0==0x00 can packet
+                if self.data[idx] == 241 and self.data[idx+1] == 0:
+                    idx = self._parseCANPacket(idx)
+                else:
+                    idx += 1
+            self.data = self.data[idx:]
 
-        # cut down write frequency
-        if len(self.parsedCANData) > self.writeFrequency:
-            self.saveParsedData()
+            # cut down write frequency
+            if len(self.parsedCANData) > self.writeFrequency:
+                self.saveParsedData()
 
     def _parseCANPacket(self,idx):
         '''
