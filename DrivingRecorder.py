@@ -13,12 +13,16 @@ It will:
 from SerialCANBus import SerialCANBus
 from RecordWebcam import RecordWebCam
 import time
+import datetime
 import sys
+import os
 
 # Settings:
 printEvery = 0.5 # seconds
-outputPath = "20180604/"#
-CANDataFile = outputPath + "CANData.csv"
+outDir = "~/car/DrivingData/"
+dateString = datetime.datetime.now().replace(microsecond=0).isoformat()
+CANDataFile = os.path.join(outDir,dateString,"CANData.csv")
+imageDir = os.path.join(outDir,dateString,"imgs")
 dataRequestMaxFrequency = 0.05 # seconds
 writeFrequency = 100 #number of packets to build up before saving to disk
 captureFrequency = 5.0 # Hz
@@ -30,22 +34,24 @@ CANData = [{"id":b'\x30\x07\x00\x00',"responseId":b'\x38\x07\x00\x00','data':b'\
             {"id":b'\xE0\x07\x00\x00',"responseId":b'\xE8\x07\x00\x00','data':b'\x03\x22\xF4\x45\x00\x00\x00\x00'}, # throttle position
             {"id":b'\x60\x07\x00\x00',"responseId":b'\x68\x07\x00\x00','data':b'\x03\x22\x2B\x0D\x00\x00\x00\x00'}, # brake pressure
             {"id":b'\x31\x07\x00\x00',"responseId":b'\x39\x07\x00\x00','data':b'\x03\x22\xD9\x80\x00\x00\x00\x00'}, # turn signal
-            {"id":b'\xE0\x07\x00\x00',"responseId":b'\xE8\x07\x00\x00','data':b'\x03\x22\xF4\x0D\x00\x00\x00\x00'}] # vehicle speed
+            {"id":b'\xE0\x07\x00\x00',"responseId":b'\xE8\x07\x00\x00','data':b'\x03\x22\xF4\x0D\x00\x00\x00\x00'}, # vehicle speed
+            {"id":b'\xE0\x07\x00\x00',"responseId":b'\xE8\x07\x00\x00','data':b'\x03\x22\x03\x2B\x00\x00\x00\x00'}] # accelerator position 
 
 #CANData= []
 
 # initalize objects:
 carData = SerialCANBus(CANDataFile,CANData=CANData,dataRequestMaxFrequency=dataRequestMaxFrequency,writeFrequency=writeFrequency,hexExplicit=False)
-imageRecorder = RecordWebCam(outputPath,captureFrequency=captureFrequency,camId=camId,show=showImages)
+imageRecorder = RecordWebCam(imageDir,captureFrequency=captureFrequency,camId=camId,show=showImages)
 
 lastPrint = 0
+startTime = time.time()
 try:
     while True:
         time.sleep(.02)
         currentTime = time.time()
         if currentTime - printEvery > lastPrint:
             lastPrint = currentTime
-            print("\rRecording data at {:.3f}".format(currentTime),end="")
+            print("\rRecording data at {:.3f}  Elapsed Time: {:.1f} minutes".format(currentTime,(currentTime-startTime)/60),end="")
         carData()
         imageRecorder()
 except(KeyboardInterrupt,SystemExit):

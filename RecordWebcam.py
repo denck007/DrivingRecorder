@@ -38,14 +38,8 @@ class RecordWebCam(object):
         '''
         Verify that self.outPath is a directory
         '''
-
-        if self.outPath[-1] != "/":
-            self.outPath += "/"
-        self.outPath += "imgs/"
-
         if not os.path.isdir(self.outPath):
             os.makedirs(self.outPath)
-
 
     def __call__(self):
         '''
