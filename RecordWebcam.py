@@ -51,7 +51,7 @@ class RecordWebCam(object):
             ret,frame = self.cap.read()
             assert ret, "Lost connection with camera {}!".format(self.camId)
             frame = cv2.flip(frame,-1)
-            cv2.imwrite("{}{:0f}.jpeg".format(self.outPath,currentTime),frame)
+            cv2.imwrite("{}/{:0f}.jpeg".format(self.outPath,currentTime),frame)
             if self.show:
                 cv2.waitKey(1)
                 cv2.imshow(self.windowName,frame)
