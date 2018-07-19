@@ -81,6 +81,8 @@ class SerialCANBus(object):
         fileDir = outputFile[:outputFile.rfind("/")]
         if not os.path.isdir(fileDir):
             os.makedirs(fileDir)
+        with open(outputFile,'w') as f:
+            f.write("TimeStamp,ID,d1,d2,d3,d4,d5,d6,d7,d8\n")
 
         print("Finished setting up CAN Recorder!")
 
@@ -252,13 +254,13 @@ class SerialCANBus(object):
                 for idx in range(len(packet["canId"])-1,-1,-2):
                     CANId = "{}{}{}".format(packet["canId"][idx-1],packet["canId"][idx],CANId)
 
-                f.write("{:.3f},{},".format(packet["time"],CANId))
+                f.write("{:.3f},{}".format(packet["time"],CANId))
                 for b in packet["data"]:
                     d = "{}".format(b)[2:]
                     if self.hexExplicit:
-                        f.write("0x{},".format(d.zfill(2)))
+                        f.write(",0x{}".format(d.zfill(2)))
                     else:
-                        f.write("{},".format(d))
+                        f.write(",{}".format(d))
                 f.write("\n")
         self.parsedCANData = []
 
