@@ -19,7 +19,7 @@ import os
 
 # Settings:
 printEvery = 0.5 # seconds
-outDir = "~/car/DrivingData/"
+outDir = "/home/neil/car/DrivingData/"
 dateString = datetime.datetime.now().replace(microsecond=0).isoformat()
 CANDataFile = os.path.join(outDir,dateString,"CANData.csv")
 imageDir = os.path.join(outDir,dateString,"imgs")
