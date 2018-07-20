@@ -4,14 +4,9 @@ import pandas as pd
 import numpy as np
 import struct
 import os
-
-inputFile = "/home/neil/car/DrivingData/2018-06-10T13:32:29/CANData.csv"
-outputFile = outputFilesPath = inputFile[:inputFile.rfind("/")]
+import argparse
 
 
-dtype = {"TimeStamp":float, "ID":bytes, "d1":bytes, "d2":bytes, "d3":bytes,"d4":bytes, "d5":bytes, "d6":bytes, "d7":bytes, "d8":bytes,"dummy":str}
-data = pd.read_csv(inputFile,index_col=False,dtype=dtype)
-data.columns = ["TimeStamp","ID","d1","d2","d3","d4","d5","d6","d7","d8","dummy"]
 
 def convertToBytes(x):
     if len(x) == 1:
@@ -89,18 +84,32 @@ def convertRow(row):
 
     return row
     
-#data = data[:100]
-data["output"] = 0
-data["commonName"] = ""
-data = data.apply(lambda row: convertRow(row),axis=1)
 
-#data.to_csv(outputFile,float_format="%.3f")
-# get unique names
-names = list(set(data.commonName.tolist()))
-colsToWrite = ["TimeStamp","output"]
-for n in names:
-    outName = os.path.join(outputFilesPath,n+".csv")
-    if "NOTIMPLEMENTED" in outName: # skip outputing not implemented data
-        continue
-    data[data.commonName==n].to_csv(outName,float_format="%.3f",columns=colsToWrite,index=False)
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="Convert a csv of captured CAN packets to individual csv files of just the data and time")
+    parser.add_argument("inputFile",help="inputFile")
+
+    args = parser.parse_args()
+
+    inputFile = args.inputFile#"/home/neil/car/DrivingData/2018-06-10T13:32:29/CANData.csv"
+    outputFilesPath = inputFile[:inputFile.rfind("/")]
+    assert os.path.isfile(inputFile), "The input file does not exist!"
+
+    dtype = {"TimeStamp":float, "ID":bytes, "d1":bytes, "d2":bytes, "d3":bytes,"d4":bytes, "d5":bytes, "d6":bytes, "d7":bytes, "d8":bytes,"dummy":str}
+    data = pd.read_csv(inputFile,index_col=False,dtype=dtype)
+    data.columns = ["TimeStamp","ID","d1","d2","d3","d4","d5","d6","d7","d8","dummy"]
+
+    data["output"] = 0
+    data["commonName"] = ""
+    data = data.apply(lambda row: convertRow(row),axis=1)
+
+    # get unique names
+    names = list(set(data.commonName.tolist()))
+    colsToWrite = ["TimeStamp","output"]
+    for n in names:
+        outName = os.path.join(outputFilesPath,n+".csv")
+        if "NOTIMPLEMENTED" in outName: # skip outputing not implemented data
+            continue
+        data[data.commonName==n].to_csv(outName,float_format="%.3f",columns=colsToWrite,index=False)
 
