@@ -39,7 +39,7 @@ def convertRow(row):
             row.commonName = "steeringWheelTorque"
             row.output = (struct.unpack("B",d5)[0]-127)/10
         elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x33' and d4 == b'\x01':
-            # steering torque
+            # steering rotation speed
             row.commonName = "steeringRotationSpeed-NOTIMPLEMENTED"
         else:
             print("Unknown packet from EPS: {}".format(row))
@@ -52,7 +52,7 @@ def convertRow(row):
                 row.output = 0
             elif d5 == b'\x21': # left
                 row.output = -1
-            elif d5 == b'\x22':
+            elif d5 == b'\x22': # right
                 row.output = 1
             else:
                 print("Unknown value for turn signal: {}".format(row))
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     dtype = {"TimeStamp":float, "ID":bytes, "d1":bytes, "d2":bytes, "d3":bytes,"d4":bytes, "d5":bytes, "d6":bytes, "d7":bytes, "d8":bytes,"dummy":str}
     data = pd.read_csv(inputFile,index_col=False,dtype=dtype)
-    data.columns = ["TimeStamp","ID","d1","d2","d3","d4","d5","d6","d7","d8","dummy"]
+    data.columns = ["TimeStamp","ID","d1","d2","d3","d4","d5","d6","d7","d8"]
 
     data["output"] = 0
     data["commonName"] = ""
