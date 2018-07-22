@@ -2,9 +2,9 @@
 
 import os
 
-sourcePath = "/home/neil/car/DrivingData/2018-06-20T16:52:25"
+sourcePath = "/home/neil/car/DrivingData/2018-06-20T16:52:25/imgs"
 outputPath = "/home/neil/car/DrivingData/2018-06-20T16:52:25/imgs"
-charactersToRemoveFromFront = 4
+#charactersToRemoveFromFront = 4
 
 imgs = [x for x in os.listdir(sourcePath) if "jpeg" in x]
 l = len(imgs[0][:imgs[0].find(".")])
@@ -44,9 +44,16 @@ def changeFolder(sourcePath,newPath,name):
     '''
     os.rename(os.path.join(sourcePath,name),os.path.join(newPath,name))
 
+def KeepOnly3DecimalPlaces(path,name):
+    extension = name[name.rfind("."):]
+    newName = name[:name.find(".")+4] + extension
+    os.rename(os.path.join(path,name),os.path.join(path,newName))
+
+
 #run it!
 for idx,img  in enumerate(imgs):
-    print("idx: {} img: {}".format(idx,img))
-    changeFolder(sourcePath,outputPath,img)
-    newName = removeCharactersFromFront(outputPath,img,charactersToRemoveFromFront)
-    milliSecondsToSeconds(outputPath,newName)
+    print("\ridx: {} img: {}".format(idx,img),end = "")
+    #changeFolder(sourcePath,outputPath,img)
+    #newName = removeCharactersFromFront(outputPath,img,charactersToRemoveFromFront)
+    #milliSecondsToSeconds(outputPath,newName)
+    KeepOnly3DecimalPlaces(outputPath,img)
