@@ -60,7 +60,7 @@ def convertRow(row):
     elif row["ID"] == '000007e8': #
         if d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x03' and d4 == b'\x2b':
             # accelerator position, 0-100%
-            row.output = struct.unpack("B",d5)[0]
+            row.output = struct.unpack("B",d5)[0]/255
             row.commonName = "acceleratorPosition"
         elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\xf4' and d4 == b'\x0d':
             # vehicleSpeed in kph
@@ -132,7 +132,7 @@ def FilterImgTimesByDataTimes(imgTimes,dataTimes,maxDelta=1.0):
 
 if __name__ == "__main__":
 
-    knownBadFormats = ["throttlePosition"]
+    knownBadFormats = ["throttlePosition","turnSignal","vehicleSpeed","steeringWheelTorque","acceleratorPosition"]
 
     parser = argparse.ArgumentParser(description="Convert a csv of captured CAN packets to individual csv files of just the data and time")
     parser.add_argument("inputPath",help="Path with CANData.csv and folder imgs/ with all the images in it")
