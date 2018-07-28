@@ -72,6 +72,10 @@ def convertRow(row):
             # throttle position 0-1
             row.output = struct.unpack("B",d5)[0]/255
             row.commonName = "throttlePosition"
+        elif d1 == b'\x07' and d2 == b'\x62' and d3 == b'\x1e' and d4 == b'\x04':
+            # clutch applied
+            row.output = struct.unpack("B",d5)[0]/255
+            row.commonName = "clutchApplied-NOTIMPLEMENTED"
         else:
             print("Unknown packet from PCM? : {}".format(row))
     elif row["ID"] == '00000768': # ABS module
@@ -79,6 +83,34 @@ def convertRow(row):
             # brake pressure
             row.output = struct.unpack("h",d6 + d5)[0]*33.3
             row.commonName = "brakePressure"
+        elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\xf4' and d4 == b'\x0d':
+            # vehicle speed
+            row.output = struct.unpack("h",d6 + d5)[0]/255.
+            row.commonName = "vehicleSpeed"
+        elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x2b' and d4 == b'\x06':
+            # left front wheel speed
+            row.output = struct.unpack("h",d6 + d5)[0]/255.
+            row.commonName = "leftFrontWheelSpeed"
+        elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x2b' and d4 == b'\x07':
+            # right front wheel speed
+            row.output = struct.unpack("h",d6 + d5)[0]/255.
+            row.commonName = "rightFrontWheelSpeed"
+        elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x2b' and d4 == b'\x08':
+            # left rear wheel speed
+            row.output = struct.unpack("h",d6 + d5)[0]/255.
+            row.commonName = "leftRearWheelSpeed"
+        elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x2b' and d4 == b'\x09':
+            # right rear wheel speed
+            row.output = struct.unpack("h",d6 + d5)[0]/255.
+            row.commonName = "rightRearWheelSpeed"
+        elif d1 == b'\x05' and d2 == b'\x62' and d3 == b'\x2b' and d4 == b'\x11':
+            # Longitudinal acceleration
+            row.output = struct.unpack("h",d6 + d5)[0]/1000.
+            row.commonName = "longitudinalAcceleration"
+        elif d1 == b'\x05' and d2 == b'\x62' and d3 == b'\x2b' and d4 == b'\x0c':
+            # Lateral acceleration
+            row.output = struct.unpack("h",d6 + d5)[0]/255.
+            row.commonName = "lateralAcceleration"
         else:
             print("Unknown packet from ABS : {}".format(row))
     else:
