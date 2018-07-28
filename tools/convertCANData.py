@@ -64,10 +64,6 @@ def convertRow(row):
             # accelerator position, 0-100%
             row.output = struct.unpack("B",d5)[0]/2
             row.commonName = "acceleratorPosition"
-        elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\xf4' and d4 == b'\x0d':
-            # vehicleSpeed in kph
-            row.output = struct.unpack("h",d6 + d5)[0]/255
-            row.commonName = "vehicleSpeed"
         elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\xf4' and d4 == b'\x45':
             # throttle position 0-1
             row.output = struct.unpack("B",d5)[0]/255
