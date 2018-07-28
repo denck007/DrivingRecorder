@@ -31,7 +31,7 @@ def convertRow(row):
     if row["ID"] == '00000738': #EPS unit
         if d1 == b'\x05' and d2 == b'\x62' and d3 == b'\x33' and d4 == b'\x02':
             # steering wheel angle, relative to vehicle start
-            row.output = struct.unpack("h",d6+d5)[0]/30
+            row.output = struct.unpack("h",d6+d5)[0]/10-780
             row.commonName = "steeringWheelAngle"
         elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x33' and d4 == b'\x0b':
             # steering torque
@@ -39,7 +39,8 @@ def convertRow(row):
             row.output = (struct.unpack("B",d5)[0]-127)/10
         elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x33' and d4 == b'\x01':
             # steering rotation speed
-            row.commonName = "steeringRotationSpeed-NOTIMPLEMENTED"
+            row.commonName = "steeringRotationSpeed"
+            row.output = struct.unpack("B",d5)[0]*4
         else:
             print("Unknown packet from EPS: {}".format(row))
             
@@ -57,14 +58,15 @@ def convertRow(row):
                 print("Unknown value for turn signal: {}".format(row))
         else:
             print("Unknown packet from cluster: {}".format(row))
-    elif row["ID"] == '000007e8': #
+
+    elif row["ID"] == '000007e8': # PCM
         if d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x03' and d4 == b'\x2b':
             # accelerator position, 0-100%
-            row.output = struct.unpack("B",d5)[0]/255
+            row.output = struct.unpack("B",d5)[0]/2
             row.commonName = "acceleratorPosition"
         elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\xf4' and d4 == b'\x0d':
             # vehicleSpeed in kph
-            row.output = struct.unpack("B",d5)[0]
+            row.output = struct.unpack("h",byte6 + byte5)[0]/255
             row.commonName = "vehicleSpeed"
         elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\xf4' and d4 == b'\x45':
             # throttle position 0-1
@@ -73,9 +75,10 @@ def convertRow(row):
         else:
             print("Unknown packet from PCM? : {}".format(row))
     elif row["ID"] == '00000768': # ABS module
-        if d1 == b'\x05' and d2 == b'\x62' and d3 == b'\x2b' and d4 == b'\x0d':
+        if d1 == b'\x05' and d2 == b'\x62' and d3 == b'\x20' and d4 == b'\x34':
             # brake pressure
-            row.commonName = "brakePressure?-NOTIMPLEMENTED"
+            row.output = struct.unpack("h",byte6 + byte5)[0]*33.3
+            row.commonName = "brakePressure"
         else:
             print("Unknown packet from ABS : {}".format(row))
     else:
