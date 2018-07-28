@@ -74,7 +74,7 @@ def convertRow(row):
             row.commonName = "throttlePosition"
         elif d1 == b'\x07' and d2 == b'\x62' and d3 == b'\x1e' and d4 == b'\x04':
             # clutch applied
-            row.output = struct.unpack("B",d5)[0]/255
+            row.output = struct.unpack("B",d7)[0]/255
             row.commonName = "clutchApplied-NOTIMPLEMENTED"
         else:
             print("Unknown packet from PCM? : {}".format(row))
