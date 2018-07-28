@@ -66,7 +66,7 @@ def convertRow(row):
             row.commonName = "acceleratorPosition"
         elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\xf4' and d4 == b'\x0d':
             # vehicleSpeed in kph
-            row.output = struct.unpack("h",byte6 + byte5)[0]/255
+            row.output = struct.unpack("h",d6 + d5)[0]/255
             row.commonName = "vehicleSpeed"
         elif d1 == b'\x04' and d2 == b'\x62' and d3 == b'\xf4' and d4 == b'\x45':
             # throttle position 0-1
@@ -77,7 +77,7 @@ def convertRow(row):
     elif row["ID"] == '00000768': # ABS module
         if d1 == b'\x05' and d2 == b'\x62' and d3 == b'\x20' and d4 == b'\x34':
             # brake pressure
-            row.output = struct.unpack("h",byte6 + byte5)[0]*33.3
+            row.output = struct.unpack("h",d6 + d5)[0]*33.3
             row.commonName = "brakePressure"
         else:
             print("Unknown packet from ABS : {}".format(row))
