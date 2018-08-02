@@ -13,7 +13,7 @@
 
 const int numFrames = 14; // number of rames we are sending
 CAN_FRAME framesToSend[numFrames];
-int timeBetweenRequests = 500;
+int timeBetweenRequests = 250;
 
 int lastSend = 0;
 
@@ -64,7 +64,7 @@ void setup()
   framesToSend[idx].data.bytes[3] = 0x02;
 
   // SteeringWheelSpeed
-  
+  idx +=1;
   framesToSend[idx].id = 0x730;
   framesToSend[idx].extended = false;
   framesToSend[idx].length = 8;
@@ -128,7 +128,7 @@ void setup()
   framesToSend[idx].id = 0x760;
   framesToSend[idx].extended = false;
   framesToSend[idx].length = 8;
-  framesToSend[idx].data.bytes[0] = 0x04;
+  framesToSend[idx].data.bytes[0] = 0x03;
   framesToSend[idx].data.bytes[1] = 0x22;
   framesToSend[idx].data.bytes[2] = 0xF4;
   framesToSend[idx].data.bytes[3] = 0x0D;
@@ -138,7 +138,7 @@ void setup()
   framesToSend[idx].id = 0x760;
   framesToSend[idx].extended = false;
   framesToSend[idx].length = 8;
-  framesToSend[idx].data.bytes[0] = 0x04;
+  framesToSend[idx].data.bytes[0] = 0x03;
   framesToSend[idx].data.bytes[1] = 0x22;
   framesToSend[idx].data.bytes[2] = 0x2B;
   framesToSend[idx].data.bytes[3] = 0x06;
@@ -148,7 +148,7 @@ void setup()
   framesToSend[idx].id = 0x760;
   framesToSend[idx].extended = false;
   framesToSend[idx].length = 8;
-  framesToSend[idx].data.bytes[0] = 0x04;
+  framesToSend[idx].data.bytes[0] = 0x03;
   framesToSend[idx].data.bytes[1] = 0x22;
   framesToSend[idx].data.bytes[2] = 0x2B;
   framesToSend[idx].data.bytes[3] = 0x07;
@@ -158,7 +158,7 @@ void setup()
   framesToSend[idx].id = 0x760;
   framesToSend[idx].extended = false;
   framesToSend[idx].length = 8;
-  framesToSend[idx].data.bytes[0] = 0x04;
+  framesToSend[idx].data.bytes[0] = 0x03;
   framesToSend[idx].data.bytes[1] = 0x22;
   framesToSend[idx].data.bytes[2] = 0x2B;
   framesToSend[idx].data.bytes[3] = 0x08;
@@ -168,7 +168,7 @@ void setup()
   framesToSend[idx].id = 0x760;
   framesToSend[idx].extended = false;
   framesToSend[idx].length = 8;
-  framesToSend[idx].data.bytes[0] = 0x04;
+  framesToSend[idx].data.bytes[0] = 0x03;
   framesToSend[idx].data.bytes[1] = 0x22;
   framesToSend[idx].data.bytes[2] = 0x2B;
   framesToSend[idx].data.bytes[3] = 0x09;
@@ -178,7 +178,7 @@ void setup()
   framesToSend[idx].id = 0x760;
   framesToSend[idx].extended = false;
   framesToSend[idx].length = 8;
-  framesToSend[idx].data.bytes[0] = 0x05;
+  framesToSend[idx].data.bytes[0] = 0x03;
   framesToSend[idx].data.bytes[1] = 0x22;
   framesToSend[idx].data.bytes[2] = 0x2B;
   framesToSend[idx].data.bytes[3] = 0x11;
@@ -188,111 +188,28 @@ void setup()
   framesToSend[idx].id = 0x760;
   framesToSend[idx].extended = false;
   framesToSend[idx].length = 8;
-  framesToSend[idx].data.bytes[0] = 0x04;
+  framesToSend[idx].data.bytes[0] = 0x03;
   framesToSend[idx].data.bytes[1] = 0x22;
   framesToSend[idx].data.bytes[2] = 0x2B;
   framesToSend[idx].data.bytes[3] = 0x0C;
-  /*
-  // get the loop frequency which controls how often the data is requested
-  // also get the number of can frames we will be sending each loop
-  // frequency is in Hz, so an uint8_t will get us 0.004seconds to 1 second between data collection
-  //    which should be sufficient
-  // the number of can frames is also a uint8_t which implies a limit of 255 frames that can be asked for
-  byte data[255*12+2]; // allocate enough space to send 255 12byte frames(8 data + 3 id + 1 length) + 2 for the timing and number of frames
-  Serial.print("Enter request frequency and number of frames\n");
-  while (Serial.available() == 0) {} // wait for input
-  Serial.readBytes(data,255*12+2);
-  timeBetweenRequests = int(1.0 / float(data[0]) * 1000.0);
-  numFrames = int(data[1]);
-  Serial.print("Time between requests is ");Serial.print(timeBetweenRequests); Serial.print(" milliseconds\n");//debug
-  Serial.print("Going to send ");Serial.print(numFrames); Serial.print(" frames\n");//debug
-  int idx;
-  uint32_t id;
-  char frameData[8];
-  uint8_t len;
-  for(idx=2;idx<numFrames;0){
-    len = uint8_t(data[idx]);
-    idx += 1;
-    id = data[idx]; idx+=1;
-    id = data[idx] << 8; idx+=1;
-    id = data[idx] << 16; idx+=1;
-    for(uint8_t l = 0; l<len;l++){
-      
-    }
-  }
-
-  // set the frequency at which the loop() function runs
-  // This controls how often we ask the car for data
-  //Serial.print("milliseconds between packet requests:\n");
-  //requestFrequency = readIntFromSerial();
-
-  // get the total number of CAN frames we are going to work with
-  //Serial.print("number of CAN frames:\n");
-  //numFrames = readByteFromSerial();
-  //Serial.print("Going to read "); Serial.print(numFrames, DEC); Serial.print(" frames from serial\n"); // debugging
-
-
-
-  // read in each CAN frame
-  // everything is in bytes
-  //
-  const byte maxNumChars = 255;
-  for (int idx = 0; idx < numFrames; idx++) {
-    byte data[maxNumChars];
-    idx = 0;
-    while (Serial.available() == 0) {} // wait for input
-    while (Serial.available()) { // read all the input
-      if (idx > maxNumChars) {
-        break;
-      }
-      data[idx] = Serial.read();
-      idx += 1;
-    }
-  }
-
-
-
-
-
-  //const char maxNumChars = 50;
-  //uint8_t data[maxNumChars];
-  //char idx = 0;
-  //while(Serial.available()==0){}// wait for input
-  //    while(Serial.available()){ // read all the input
-  //      if (idx>maxNumChars){break;}
-  //      data[idx] = Serial.read();
-  //      idx += 1;
-  //}
-  //data[idx] = 0; // end in null
-  //String str((char*)data);Serial.print("You entered ");Serial.print((char*)data);Serial.print("\r\n"); // debugging
-  //requestFrequency = String((char*)data).toInt();
-
-*/
-
-
-
+  
   Can0.begin(CAN_BPS_500K);
-
-
   //By default there are 7 mailboxes for each device that are RX boxes
   //This sets each mailbox to have an open filter that will accept extended
   //or standard frames
+
+  //deny all CAN packets by default
   int filter;
   //extendeds
   for (filter = 0; filter < 3; filter++) {
-    Can0.setRXFilter(filter, 0, 0, true);
-    Can1.setRXFilter(filter, 0, 0, true);
+    Can0.setRXFilter(filter, 0, 0xffffff, true);
+    Can1.setRXFilter(filter, 0, 0xffffff, true);
   }
   //standard
   for (int filter = 3; filter < 7; filter++) {
-    Can0.setRXFilter(filter, 0, 0, false);
-    Can1.setRXFilter(filter, 0, 0, false);
+    Can0.setRXFilter(filter, 0, 0xffffff, false);
+    Can1.setRXFilter(filter, 0, 0xffffff, false);
   }
-
-  //delay(5000);
-
-  pinMode(DS2, OUTPUT);
-  digitalWrite(DS2, LOW);
 
   Serial.print("Setting RX filter\n");
   int filterStatus;
@@ -300,10 +217,6 @@ void setup()
   filterStatus = Can0.setRXFilter(1, 0x739, 0xffffff, false);
   filterStatus = Can0.setRXFilter(2, 0x7E8, 0xffffff, false);
   filterStatus = Can0.setRXFilter(3, 0x768, 0xffffff, false);
-  Can0.setCallback(0,writeFrameToSerial);
-  Can0.setCallback(1,writeFrameToSerial);
-  Can0.setCallback(2,writeFrameToSerial);
-  Can0.setCallback(3,writeFrameToSerial);
   
   if (filterStatus >= 0) {
     Serial.print("Set RX filter on mailbox ");
@@ -314,47 +227,60 @@ void setup()
   }
   
   Serial.print("\n");
+
+  Serial.print("Waiting for computer to request time in a very hacky way...\n");
+  while(!Serial.available()){}
+  Serial.print(millis());
+  delay(1000);
 }
 
 void writeFrameToSerial(CAN_FRAME *frame) {
   digitalWrite(DS6, !digitalRead(DS6)); // invert status of green led
   Serial.print(millis());
-  Serial.print(" ID: 0x");
+  Serial.print(",");
+  //Serial.print(" ID: 0x");
   Serial.print(frame->id, HEX);
-  Serial.print(" Len: ");
+  Serial.print(",");
+  //Serial.print(" Len: ");
   Serial.print(frame->length);
-  Serial.print(" Data: 0x");
+  //Serial.print(" Data: 0x");
   for (int count = 0; count < frame->length; count++) {
+    Serial.print(",");
     Serial.print(frame->data.bytes[count], HEX);
-    Serial.print(" ");
   }
-  Serial.print("\r\n");
-}
-
-void sendFrame() {
-  CAN_FRAME myFrame;
-  myFrame.id = 0x730;
-  myFrame.extended = false;
-  myFrame.length = 8;
-  myFrame.data.bytes[0] = 0x03;
-  myFrame.data.bytes[1] = 0x22;
-  myFrame.data.bytes[2] = 0x33;
-  myFrame.data.bytes[3] = 0x02;
+  Serial.print("\n");
 }
 
 void loop() {
-  CAN_FRAME incoming;
+  CAN_FRAME fakeFrame;
+  fakeFrame.id = 0x731;
+  fakeFrame.length = 8;
+  fakeFrame.data.bytes[0] = 0x01;
+  fakeFrame.data.bytes[1] = 0x02;
+  fakeFrame.data.bytes[2] = 0x03;
+  fakeFrame.data.bytes[3] = 0x04;
+  fakeFrame.data.bytes[4] = 0x05;
+  fakeFrame.data.bytes[5] = 0x06;
+  fakeFrame.data.bytes[6] = 0x07;
+  fakeFrame.data.bytes[7] = 0x08;
+  writeFrameToSerial(&fakeFrame);
+  delay(100);
 
-  if (lastSend+timeBetweenRequests >= millis()){
+  /*
+  CAN_FRAME frame;
+  if (lastSend+timeBetweenRequests <= millis()){
     digitalWrite(DS5, !digitalRead(DS5)); // invert status of first yellow LED
-    for (int ii=0;ii<numFrames;ii++){
+    lastSend = millis();
+    for (int ii=0;ii<numFrames;ii++){ // want to clear the buffers as they come in
       Can0.sendFrame(framesToSend[ii]);
+      delay(20);// need to wait so Tx buffer does not get overwritten, also helps in Rx
+      while (Can0.available()>0){
+        Can0.read(frame);
+        writeFrameToSerial(&frame);
+      }
     }
   }
-  //delay(100);
-  //Serial.print(millis());
-  //Serial.print("\r\n");
-
+  */
 }
 
 

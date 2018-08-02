@@ -23,24 +23,12 @@ outDir = "/home/neil/car/DrivingData/"
 dateString = datetime.datetime.now().replace(microsecond=0).isoformat()
 CANDataFile = os.path.join(outDir,dateString,"CANData.csv")
 imageDir = os.path.join(outDir,dateString,"imgs")
-dataRequestMaxFrequency = 0.05 # seconds
-writeFrequency = 100 #number of packets to build up before saving to disk
 captureFrequency = 5.0 # Hz
 camId = 1
 showImages = True
-CANData = [{"id":b'\x30\x07\x00\x00',"responseId":b'\x38\x07\x00\x00','data':b'\x03\x22\x33\x02\x00\x00\x00\x00'}, # steering angle
-            {"id":b'\x30\x07\x00\x00',"responseId":b'\x38\x07\x00\x00','data':b'\x03\x22\x33\x0B\x00\x00\x00\x00'}, # steering torque
-            {"id":b'\x30\x07\x00\x00',"responseId":b'\x38\x07\x00\x00','data':b'\x03\x22\x33\x01\x00\x00\x00\x00'}, # steering speed
-            {"id":b'\xE0\x07\x00\x00',"responseId":b'\xE8\x07\x00\x00','data':b'\x03\x22\xF4\x45\x00\x00\x00\x00'}, # throttle position
-            {"id":b'\x60\x07\x00\x00',"responseId":b'\x68\x07\x00\x00','data':b'\x03\x22\x2B\x0D\x00\x00\x00\x00'}, # brake pressure
-            {"id":b'\x31\x07\x00\x00',"responseId":b'\x39\x07\x00\x00','data':b'\x03\x22\xD9\x80\x00\x00\x00\x00'}, # turn signal
-            {"id":b'\xE0\x07\x00\x00',"responseId":b'\xE8\x07\x00\x00','data':b'\x03\x22\xF4\x0D\x00\x00\x00\x00'}, # vehicle speed
-            {"id":b'\xE0\x07\x00\x00',"responseId":b'\xE8\x07\x00\x00','data':b'\x03\x22\x03\x2B\x00\x00\x00\x00'}] # accelerator position 
-
-#CANData= []
 
 # initalize objects:
-carData = SerialCANBus(CANDataFile,CANData=CANData,dataRequestMaxFrequency=dataRequestMaxFrequency,writeFrequency=writeFrequency,hexExplicit=False)
+carData = SerialCANBus(CANDataFile)
 imageRecorder = RecordWebCam(imageDir,captureFrequency=captureFrequency,camId=camId,show=showImages)
 
 lastPrint = 0
@@ -56,9 +44,7 @@ try:
         imageRecorder()
 except(KeyboardInterrupt,SystemExit):
     print("\nShutting down by user request...")
-    carData.saveParsedData()
     imageRecorder.shutDown()
-    
     print("Exiting!")
     
     
