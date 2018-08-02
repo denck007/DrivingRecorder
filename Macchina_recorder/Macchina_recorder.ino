@@ -252,6 +252,7 @@ void writeFrameToSerial(CAN_FRAME *frame) {
 }
 
 void loop() {
+  /*
   CAN_FRAME fakeFrame;
   fakeFrame.id = 0x731;
   fakeFrame.length = 8;
@@ -265,8 +266,8 @@ void loop() {
   fakeFrame.data.bytes[7] = 0x08;
   writeFrameToSerial(&fakeFrame);
   delay(100);
-
-  /*
+*/
+  
   CAN_FRAME frame;
   if (lastSend+timeBetweenRequests <= millis()){
     digitalWrite(DS5, !digitalRead(DS5)); // invert status of first yellow LED
@@ -280,7 +281,6 @@ void loop() {
       }
     }
   }
-  */
 }
 
 
