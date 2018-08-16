@@ -10,14 +10,16 @@ import argparse
 def convertToBytes(x):
     if len(x) == 1:
         x = "0" + x
-    out = bytes.fromhex(x)
+    out = hex(ord(bytes.fromhex(x)))
     return out
 def convertRow(row):
     def convertToByte(x):
         if len(x) == 1:
             x = "0" + x
-        out = bytes.fromhex(x)
-        return out
+        x = bytes("\\x"+x,"utf-8")
+        x = x.decode('unicode_escape').encode("latin1")
+        #out = bytes.fromhex(x)
+        return x
 
     d1 = convertToByte(row.d1)
     d2 = convertToByte(row.d2)
@@ -27,8 +29,18 @@ def convertRow(row):
     d6 = convertToByte(row.d6)
     d7 = convertToByte(row.d7)
     d8 = convertToByte(row.d8)
+
+    #d1 = row.d1.lower()
+    #d2 = row.d2.lower()
+    #d3 = row.d3.lower()
+    #d4 = row.d4.lower()
+    #d5 = row.d5.lower()
+    #d6 = row.d6.lower()
+    #d7 = row.d7.lower()
+    #d8 = row.d8.lower()
+
     
-    if row["ID"] == '00000738': #EPS unit
+    if row["ID"] == '738': #EPS unit
         if d1 == b'\x05' and d2 == b'\x62' and d3 == b'\x33' and d4 == b'\x02':
             # steering wheel angle, relative to vehicle start
             row.output = struct.unpack("h",d6+d5)[0]/10-780
@@ -42,9 +54,9 @@ def convertRow(row):
             row.commonName = "steeringRotationSpeed"
             row.output = struct.unpack("B",d5)[0]*4
         else:
-            print("Unknown packet from EPS: {}".format(row))
+            print("Unknown packet from EPS ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4))
             
-    elif row["ID"] =='00000739': # 
+    elif row["ID"] =='739': # 
         if d1 == b'\x05' and d2 == b'\x62' and d3 == b'\xd9' and d4 == b'\x80':
             #turn signal indicator
             row.commonName = "turnSignal"
@@ -57,9 +69,9 @@ def convertRow(row):
             else:
                 print("Unknown value for turn signal: {}".format(row))
         else:
-            print("Unknown packet from cluster: {}".format(row))
+            print("Unknown packet from cluster ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4))
 
-    elif row["ID"] == '000007e8': # PCM
+    elif row["ID"] == '7E8': # PCM
         if d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x03' and d4 == b'\x2b':
             # accelerator position, 0-100%
             row.output = struct.unpack("B",d5)[0]/2
@@ -73,8 +85,8 @@ def convertRow(row):
             row.output = struct.unpack("B",d7)[0]/255
             row.commonName = "clutchApplied-NOTIMPLEMENTED"
         else:
-            print("Unknown packet from PCM? : {}".format(row))
-    elif row["ID"] == '00000768': # ABS module
+            print("Unknown packet from PCM ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4))
+    elif row["ID"] == '768': # ABS module
         if d1 == b'\x05' and d2 == b'\x62' and d3 == b'\x20' and d4 == b'\x34':
             # brake pressure
             row.output = struct.unpack("h",d6 + d5)[0]*33.3
@@ -108,9 +120,9 @@ def convertRow(row):
             row.output = struct.unpack("h",d6 + d5)[0]/255.
             row.commonName = "lateralAcceleration"
         else:
-            print("Unknown packet from ABS : {}".format(row))
+            print("Unknown packet from ABS ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4))
     else:
-            print("Unknown packet: {}".format(row))
+            print("Unknown packet:  ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4))
 
     return row
     
@@ -163,8 +175,7 @@ def FilterImgTimesByDataTimes(imgTimes,dataTimes,maxDelta=1.0):
 
 if __name__ == "__main__":
 
-    knownBadFormats = ["throttlePosition","turnSignal","vehicleSpeed","steeringWheelTorque","acceleratorPosition"]
-
+    knownBadFormats = []
     parser = argparse.ArgumentParser(description="Convert a csv of captured CAN packets to individual csv files of just the data and time")
     parser.add_argument("inputPath",help="Path with CANData.csv and folder imgs/ with all the images in it")
     parser.add_argument("--maxDelta",help="The maximum difference in time between an image and data points",default=1.0)
@@ -173,7 +184,7 @@ if __name__ == "__main__":
 
     inputPath = args.inputPath
     assert os.path.isdir(inputPath), "The specified path does not exist!\n{}".format(inputPath)
-    maxDelta = args.maxDelta
+    maxDelta = float(args.maxDelta)
 
     inputCSV = os.path.join(inputPath,"CANData.csv")
     imgPath = os.path.join(inputPath,"imgs")
@@ -188,17 +199,20 @@ if __name__ == "__main__":
     print("Found {} images".format(len(imageTimes))) 
 
     # read in the raw CANData.csv file and convert the bytes to real values
-    dtype = {"TimeStamp":float, "ID":bytes, "d1":bytes, "d2":bytes, "d3":bytes,"d4":bytes, "d5":bytes, "d6":bytes, "d7":bytes, "d8":bytes,"dummy":str}
+    dtype = {"TimeStamp":float, "ID":str, "d1":bytes, "d2":bytes, "d3":bytes,"d4":bytes, "d5":bytes, "d6":bytes, "d7":bytes, "d8":bytes,"length":float}
     data = pd.read_csv(inputCSV,index_col=False,dtype=dtype)
-    data.columns = ["TimeStamp","ID","d1","d2","d3","d4","d5","d6","d7","d8"]
+    data.columns = ["TimeStamp","ID","length","d1","d2","d3","d4","d5","d6","d7","d8"] 
     data["output"] = 0
     data["commonName"] = ""
     data = data.apply(lambda row: convertRow(row),axis=1)
 
     # For each type of data, filter out times that do not have another data point within maxDelta seconds
     dataNames = list(set(data.commonName.tolist()))
+    dataNames = [x for x in dataNames if (x != "") or ("NOTIMPLEMENTED" not in x)]
+
     for dataName in dataNames:
-        if ("NOTIMPLEMENTED" in dataName) or (dataName in knownBadFormats):
+        # do not interpolate on not implemented, bad data, or unknow formats ("" in commonNames)
+        if ("NOTIMPLEMENTED" in dataName) or (dataName in knownBadFormats) or (dataName == ""):
             print("Skipping {}".format(dataName))
             continue
         d = data[data.commonName == dataName]
