@@ -21,6 +21,12 @@ def convertRow(row):
         #out = bytes.fromhex(x)
         return x
 
+    def count_unknown_packet(packet):
+        if packet not in unknown_packets.keys():
+            unknown_packets.update({packet:1})
+        else:
+            unknown_packets[packet] += 1
+
     d1 = convertToByte(row.d1)
     d2 = convertToByte(row.d2)
     d3 = convertToByte(row.d3)
@@ -54,8 +60,9 @@ def convertRow(row):
             row.commonName = "steeringRotationSpeed"
             row.output = struct.unpack("B",d5)[0]*4
         else:
-            print("Unknown packet from EPS ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4))
-            
+            unknown_string = "Unknown packet from EPS ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4)
+            count_unknown_packet(unknown_string)
+
     elif row["ID"] =='739': # 
         if d1 == b'\x05' and d2 == b'\x62' and d3 == b'\xd9' and d4 == b'\x80':
             #turn signal indicator
@@ -69,7 +76,8 @@ def convertRow(row):
             else:
                 print("Unknown value for turn signal: {}".format(row))
         else:
-            print("Unknown packet from cluster ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4))
+            unknown_string = "Unknown packet from cluster ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4)
+            count_unknown_packet(unknown_string)
 
     elif row["ID"] == '7E8': # PCM
         if d1 == b'\x04' and d2 == b'\x62' and d3 == b'\x03' and d4 == b'\x2b':
@@ -85,7 +93,8 @@ def convertRow(row):
             row.output = struct.unpack("B",d7)[0]/255
             row.commonName = "clutchApplied-NOTIMPLEMENTED"
         else:
-            print("Unknown packet from PCM ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4))
+            unknown_string = "Unknown packet from PCM ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4)
+            count_unknown_packet(unknown_string)
     elif row["ID"] == '768': # ABS module
         if d1 == b'\x05' and d2 == b'\x62' and d3 == b'\x20' and d4 == b'\x34':
             # brake pressure
@@ -120,9 +129,12 @@ def convertRow(row):
             row.output = struct.unpack("h",d6 + d5)[0]/255.
             row.commonName = "lateralAcceleration"
         else:
-            print("Unknown packet from ABS ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4))
+            unknown_string = "Unknown packet from ABS ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4)
+            count_unknown_packet(unknown_string)    
+
     else:
-            print("Unknown packet:  ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4))
+            unknown_string = "Unknown packet:  ID:{} d1:{} d2:{} d3:{} d4:{}".format(row["ID"],d1,d2,d3,d4)
+            count_unknown_packet(unknown_string)           
 
     return row
     
@@ -198,6 +210,8 @@ if __name__ == "__main__":
     imageTimes = GetImageTimes(imgPath)
     print("Found {} images".format(len(imageTimes))) 
 
+    unknown_packets = {} # dict of the error strings and times seen from when we find unknown packets
+
     # read in the raw CANData.csv file and convert the bytes to real values
     dtype = {"TimeStamp":float, "ID":str, "d1":bytes, "d2":bytes, "d3":bytes,"d4":bytes, "d5":bytes, "d6":bytes, "d7":bytes, "d8":bytes,"length":float}
     data = pd.read_csv(inputCSV,index_col=False,dtype=dtype)
@@ -205,6 +219,10 @@ if __name__ == "__main__":
     data["output"] = 0
     data["commonName"] = ""
     data = data.apply(lambda row: convertRow(row),axis=1)
+
+    for p in unknown_packets:
+        print("{} was seen {} times".format(p,unknown_packets[p]))
+    print()
 
     # For each type of data, filter out times that do not have another data point within maxDelta seconds
     dataNames = list(set(data.commonName.tolist()))
@@ -224,17 +242,18 @@ if __name__ == "__main__":
     print("Finished filtering image times based on data\n")
 
     # now get the values at each imageTime
+    print("Interpolating Data...")
     interpolatedData = pd.DataFrame(imageTimes,columns=["TimeStamp"])
     interpolatedData = interpolatedData.sort_values("TimeStamp")
     for dataName in dataNames:
         if ("NOTIMPLEMENTED" in dataName) or (dataName in knownBadFormats):
             continue
-        print("Interpolating {}...".format(dataName))
         d = data[data.commonName == dataName]
         d = d.sort_values("TimeStamp")
         rawX = np.array(d.TimeStamp)
         rawY = np.array(d.output)
         interpolatedData[dataName] = np.interp(imageTimes,rawX,rawY)
+    
     print("\nSaving data!")
     interpolatedData.to_csv(outputCSV,index=False)
 
