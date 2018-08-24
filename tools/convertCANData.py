@@ -208,11 +208,10 @@ if __name__ == "__main__":
     outputCSV = os.path.join(inputPath,outputCSV)
 
     imageTimes = GetImageTimes(imgPath)
-    print("Found {} images".format(len(imageTimes))) 
-
-    unknown_packets = {} # dict of the error strings and times seen from when we find unknown packets
-
+    
     # read in the raw CANData.csv file and convert the bytes to real values
+    print("Parsing out CANData and converting to real values...")
+    unknown_packets = {} # dict of the error strings and times seen from when we find unknown packets
     dtype = {"TimeStamp":float, "ID":str, "d1":bytes, "d2":bytes, "d3":bytes,"d4":bytes, "d5":bytes, "d6":bytes, "d7":bytes, "d8":bytes,"length":float}
     data = pd.read_csv(inputCSV,index_col=False,dtype=dtype)
     data.columns = ["TimeStamp","ID","length","d1","d2","d3","d4","d5","d6","d7","d8"] 
@@ -222,12 +221,15 @@ if __name__ == "__main__":
 
     for p in unknown_packets:
         print("{} was seen {} times".format(p,unknown_packets[p]))
-    print()
 
     # For each type of data, filter out times that do not have another data point within maxDelta seconds
+    print("\nFiltering image times based on data, starting with {} images...".format(len(imageTimes)))
+    
     dataNames = list(set(data.commonName.tolist()))
-    dataNames = [x for x in dataNames if (x != "") or ("NOTIMPLEMENTED" not in x)]
+    dataNames = [x for x in dataNames if (x != "") and ("NOTIMPLEMENTED" not in x)]
 
+    max_name_length = sorted([len(x) for x in dataNames])[-1]
+    max_num_length = int(np.log10(len(imageTimes))+1)
     for dataName in dataNames:
         # do not interpolate on not implemented, bad data, or unknow formats ("" in commonNames)
         if ("NOTIMPLEMENTED" in dataName) or (dataName in knownBadFormats) or (dataName == ""):
@@ -238,11 +240,13 @@ if __name__ == "__main__":
         d = FilterDataByDelta(d,maxDelta=maxDelta)
         dataTimes = np.array(d.TimeStamp)
         imageTimes = FilterImgTimesByDataTimes(imageTimes,dataTimes,maxDelta=maxDelta)
-        print("After filtering with {}, now have {} images".format(dataName,len(imageTimes)))
-    print("Finished filtering image times based on data\n")
-
+        print("After filtering with {name:>{name_width}s}, now have {num_imgs:{num_width}d} images".format(name=dataName,
+                                                                                                            num_imgs=len(imageTimes),
+                                                                                                            name_width=max_name_length,
+                                                                                                            num_width=max_num_length))
+    
     # now get the values at each imageTime
-    print("Interpolating Data...")
+    print("\nInterpolating Data...")
     interpolatedData = pd.DataFrame(imageTimes,columns=["TimeStamp"])
     interpolatedData = interpolatedData.sort_values("TimeStamp")
     for dataName in dataNames:
@@ -254,7 +258,6 @@ if __name__ == "__main__":
         rawY = np.array(d.output)
         interpolatedData[dataName] = np.interp(imageTimes,rawX,rawY)
     
-    print("\nSaving data!")
     interpolatedData.to_csv(outputCSV,index=False)
 
     print("Data was interpolated for {} images with at least 1 point within {:.3f} seconds".format(imageTimes.shape[0],maxDelta))
