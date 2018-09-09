@@ -1,0 +1,4 @@
+{
+    "board": "macchina:sam:m2",
+    "port": "/dev/ttyACM0"
+}
