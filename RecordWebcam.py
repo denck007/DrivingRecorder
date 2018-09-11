@@ -4,6 +4,7 @@ For use in recording a usb camera mounted in a car
 import os
 import time
 import cv2
+from WebcamVideoStream import WebcamVideoStream
 
 class RecordWebCam(object):
 
@@ -24,13 +25,16 @@ class RecordWebCam(object):
 
         # create the video stream
         self.camId = camId
-        self.cap = cv2.VideoCapture(camId)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT,720)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,1280)
+        #self.cap = cv2.VideoCapture(camId)
+        self.cap = WebcamVideoStream(src=self.camId)
+        self.cap.stream.set(cv2.CAP_PROP_FRAME_HEIGHT,720)
+        self.cap.stream.set(cv2.CAP_PROP_FRAME_WIDTH,1280)
+        self.cap.start()
 
         if show:
             self.windowName = "Captured Image"
             cv2.namedWindow("Captured Image",cv2.WINDOW_NORMAL)
+            cv2.resizeWindow("Captured Image", 640,480)
 
         print("Finished setting up camera {}!".format(self.camId))
 
@@ -48,9 +52,10 @@ class RecordWebCam(object):
         currentTime = time.time()       
         if currentTime - self.timeBetweenFrames > self.lastCapture:
             self.lastCapture = currentTime
-            ret,frame = self.cap.read()
-            assert ret, "Lost connection with camera {}!".format(self.camId)
-            frame = cv2.flip(frame,-1)
+            #ret,frame = self.cap.read()
+            #assert ret, "Lost connection with camera {}!".format(self.camId)
+            frame = self.cap.read()
+            #frame = cv2.flip(frame,-1)
             cv2.imwrite("{}/{:0.3f}.jpeg".format(self.outPath,currentTime),frame)
             if self.show:
                 cv2.waitKey(1)
@@ -60,6 +65,7 @@ class RecordWebCam(object):
         '''
         Shut down the recorder
         '''
-        self.cap.release()
+        #self.cap.release()
+        self.cap.stop()
         if self.show:
             cv2.destroyAllWindows()
