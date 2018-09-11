@@ -1,4 +1,5 @@
 {
     "board": "macchina:sam:m2",
-    "port": "/dev/ttyACM0"
+    "port": "/dev/ttyACM0",
+    "sketch": "Macchina_recorder/Macchina_recorder.ino"
 }

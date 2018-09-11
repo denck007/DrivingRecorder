@@ -7,16 +7,14 @@
             ],
             "includePath": [
                 "${workspaceRoot}",
-                "/home/neil/.arduino15/packages/macchina/hardware/sam/0.3.0/**",        
+                "/home/neil/.arduino15/packages/macchina/hardware/sam/0.3.0/**",
+                "/home/neil/.arduino15/packages/arduino/hardware/sam/1.6.10/cores/arduino/**",
+                "/home/neil/.arduino15/packages/arduino/hardware/sam/**",
                 "/home/neil/arduino-1.8.5/hardware/tools/**",
                 "/home/neil/arduino-1.8.5/libraries/**",
                 "/home/neil/Documents/Arduino/hardware/tools/**",
                 "/home/neil/Documents/Arduino/libraries/**",
-                "/home/neil/arduino-1.8.5/hardware/",
-                "/home/neil/arduino-1.8.5/libraries/",
-                "/home/neil/arduino-1.8.5/hardware/arduino/avr/cores/arduino/",
-                "/home/neil/arduino-1.8.5/hardware/tools/avr/avr/include/avr/",
-                "/home/neil/arduino-1.8.5/hardware/tools/avr/avr/include/"
+                "/home/neil/arduino-1.8.5/hardware/arduino/avr/cores/arduino/**"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": false,
@@ -25,7 +23,9 @@
                     "/home/neil/.arduino15/packages/macchina/hardware/sam/0.3.0/",
                     "/home/neil/Documents/Arduino/libraries/",
                     "/home/neil/arduino-1.8.5/libraries",
-                    "/home/neil/.arduino15/packages/arduino/hardware/sam"
+                    "/home/neil/.arduino15/packages/arduino/hardware/sam",
+                    "/home/neil/.arduino15/packages/arduino/hardware/sam/1.6.10/cores/arduino",
+                    "/home/neil/arduino-1.8.5/hardware/arduino/avr/cores/arduino/"
 
                 ]
             },
